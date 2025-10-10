@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.5.48", features = ["derive", "env"] }
+rdkafka = { version = "0.38.0", features = ["cmake-build"] }
+tokio = { version = "1.47.1", features = ["full"] }
