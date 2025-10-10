@@ -1,17 +1,24 @@
 use clap::Parser;
 
 pub mod cli;
+pub mod models;
+pub mod kafka;
+
 use cli::*;
 
 #[tokio::main]
 async fn main() {
-    println!("Poison Queue CLI!");
-
     let cli = cli::commands::Args::parse();
+
+    // TODO: Load from config.
+    let brokers = "localhost:9092";
 
     match cli.command {
         Some(Commands::ListTopics) => {
-            todo!();
+            if let Err(e) = list_topics(brokers).await {
+                eprintln!("Error listing topics: {}", e);
+                std::process::exit(1);
+            }
         },
         Some(Commands::ListMessages {
             topic,
