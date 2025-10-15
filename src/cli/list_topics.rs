@@ -1,10 +1,13 @@
 use std::time::Duration;
 
+use anyhow::{anyhow};
 use rdkafka::{consumer::Consumer, ClientConfig};
 
 use crate::kafka::{CustomContext, LoggingConsumer};
 
-pub async fn list_topics(brokers: &str,) -> Result<(), Box<dyn std::error::Error>> {
+const DEAD_LETTER_QUEUE_PREFIX: &str = "dlq-";
+
+pub async fn list_topics(brokers: &str,) -> Result<(), anyhow::Error> {
     let context = CustomContext;
 
     let mut config = ClientConfig::new();
@@ -18,8 +21,11 @@ pub async fn list_topics(brokers: &str,) -> Result<(), Box<dyn std::error::Error
         .expect("Consumer creation failed");
     
     // Fetch metadata for all topics (pass None to get all topics)
-    let metadata = consumer.fetch_metadata(None, Duration::from_secs(10)).unwrap();
-    
+    let metadata = consumer
+        .fetch_metadata(None, Duration::from_secs(10))
+        .map_err(|e| anyhow!("Failed to fetch Kafka metadata: {:?}", e))
+        .expect("Unable to fetch Kafka metadata");
+
     if metadata.topics().is_empty() {
         println!("🔍 No topics found in Kafka cluster");
         return Ok(());
@@ -50,7 +56,7 @@ pub async fn list_topics(brokers: &str,) -> Result<(), Box<dyn std::error::Error
 
         if is_internal {
             internal_topics.push(topic_info);
-        } else if topic_name.starts_with("dlq-") || topic_name.contains("-dlq") {
+        } else if topic_name.starts_with(DEAD_LETTER_QUEUE_PREFIX) {
             dlq_topics.push(topic_info);
         } else {
             regular_topics.push(topic_info);
@@ -103,7 +109,6 @@ pub async fn list_topics(brokers: &str,) -> Result<(), Box<dyn std::error::Error
     
     Ok(())
 }
-
 
 #[derive(Debug)]
 struct TopicDisplayInfo {
