@@ -1,1 +1,29 @@
-# poison-queue-cli
+# Poison Queue CLI
+A command-line interface tool built in Rust for managing poison messages in Apache Kafka. This tool helps analyze and manage problematic messages that repeatedly fail processing, ensuring system reliability and preventing message processing bottlenecks.
+
+## Running Locally
+
+### 1. Start Kafka Infrastructure
+`docker-compose up -d`
+
+### 2. Creating test topics
+`docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --create --topic user-events --partitions 1 --replication-factor 1 2>/dev/null`
+
+`docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --create --topic dlq-user-events --partitions 1 --replication-factor 1 2>/dev/null`
+
+### 3. Send sample normal messages
+`./send-message.sh user-events normal`
+
+### 4. Send a sample poison message
+`./send-message.sh user-events poison` 
+
+### 5. Send a sample DLQ message
+`./send-message.sh dlq-user-events dlq`
+
+### 6. List topics
+`docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --list`
+
+### 7. Show messages in dlq-user-events
+`docker-compose exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic dlq-user-events --from-beginning --max-messages 10`
+
+`docker-compose exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic dlq-user-events --from-beginning | jq .`
