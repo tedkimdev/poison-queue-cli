@@ -1,7 +1,6 @@
 use clap::Parser;
 
 pub mod cli;
-pub mod models;
 pub mod kafka;
 
 use cli::*;
@@ -12,6 +11,7 @@ async fn main() {
 
     // TODO: Load from config.
     let brokers = "localhost:9092";
+    let group_id = "poison_queue_cli_consumer_group_id";
 
     match cli.command {
         Some(Commands::ListTopics) => {
@@ -23,7 +23,10 @@ async fn main() {
         Some(Commands::ListMessages {
             topic,
         }) => {
-            todo!();
+            if let Err(e) = list_messages(brokers, group_id, &topic).await {
+                eprintln!("Error listing messages: {}", e);
+                std::process::exit(1);
+            }
         },
         Some(Commands::ViewMessage {
             message_id,
