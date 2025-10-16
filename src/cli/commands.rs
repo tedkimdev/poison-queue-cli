@@ -17,6 +17,7 @@ pub enum Commands {
     },
     /// List a message.
     ViewMessage {
+        topic: String,
         message_id: String,
     },
     /// Edit a message.
@@ -25,6 +26,7 @@ pub enum Commands {
     },
     /// Archive a message.
     ArchiveMessage {
+        topic: String,
         message_id: String,
     },
     /// Republish a message to the original topic.

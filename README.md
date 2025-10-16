@@ -33,6 +33,27 @@ Each message sent to the DLQ is a JSON object with **all operational context sto
 - Payload contains only business data
 - Kafka headers are optional: since all necessary info is in metadata, headers do not need to be inspected for DLQ management.
 
+### DLQ Message Handling
+
+- Messages are processed in **offset order** (oldest first).  
+- After processing a message (archiving/reprocessing), the consumer commits its offset.  
+- Committing ensures all earlier messages in the same partition are considered handled.  
+- This guarantees no messages are skipped and avoids inconsistencies when archiving or reprocessing.
+
+### Optional Consideration: Database Tracking for DLQ
+
+Kafka DLQ messages are committed sequentially per partition, which means handling a message in the middle can unintentionally skip earlier messages. 
+
+One way to handle messages individually is to maintain a database table that tracks each DLQ message’s status, for example:
+
+- `pending` — message not yet processed  
+- `archived` — message safely stored in archive topic  
+- `reprocessed` — message sent back to the original topic  
+- `discarded` — message intentionally removed  
+
+This approach allows **selective processing, auditing, and safe reprocessing**.  
+> Note: This is just a conceptual approach; it is not implemented in this project.
+
 ## Running Locally
 
 ### 1. Start Kafka Infrastructure
@@ -42,6 +63,10 @@ Each message sent to the DLQ is a JSON object with **all operational context sto
 `docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --create --topic user-events --partitions 1 --replication-factor 1 2>/dev/null`
 
 `docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --create --topic dlq-user-events --partitions 1 --replication-factor 1 2>/dev/null`
+
+### 2.1 Creating archive topic
+`docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --create --topic dlq-archive --partitions 1 --replication-factor 1 2>/dev/null`
+
 
 ### 3. Send sample normal messages
 `./send-message.sh user-events normal`
