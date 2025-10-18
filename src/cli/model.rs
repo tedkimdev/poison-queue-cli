@@ -1,5 +1,18 @@
 use tabled::Tabled;
 
+// DLQ message field names
+pub const FIELD_ID: &str = "id";
+pub const FIELD_CORRELATION_ID: &str = "correlationId";
+pub const FIELD_PAYLOAD: &str = "payload";
+pub const FIELD_METADATA: &str = "metadata";
+
+// Metadata field names
+pub const METADATA_ARCHIVED_AT: &str = "archivedAt";
+pub const METADATA_FAILURE_REASON: &str = "failureReason";
+pub const METADATA_RETRY_COUNT: &str = "retryCount";
+pub const METADATA_ORIGINAL_TOPIC: &str = "originalTopic";
+pub const METADATA_MOVED_TO_DLQ_AT: &str = "movedToDlqAt";
+
 #[derive(Tabled)]
 pub struct DlqMessage {
     pub payload: String,
@@ -14,16 +27,16 @@ pub struct DlqMessage {
 
 impl DlqMessage {
     pub fn parse(json: serde_json::Value) -> Self {
-        let id = json["id"].as_str().unwrap_or("-");
-        let correlation_id = json["correlationId"].as_str().unwrap_or("-");
-        let reason = json["metadata"]["failureReason"].as_str().unwrap_or("-");
-        let retries = json["metadata"]["retryCount"].as_i64().unwrap_or(0);
-        let original = json["metadata"]["originalTopic"].as_str().unwrap_or("-");
-        let moved_at = json["metadata"]["movedToDlqAt"].as_str().unwrap_or("-");
+        let id = json[FIELD_ID].as_str().unwrap_or("-");
+        let correlation_id = json[FIELD_CORRELATION_ID].as_str().unwrap_or("-");
+        let reason = json[FIELD_METADATA][METADATA_FAILURE_REASON].as_str().unwrap_or("-");
+        let retries = json[FIELD_METADATA][METADATA_RETRY_COUNT].as_i64().unwrap_or(0);
+        let original = json[FIELD_METADATA][METADATA_ORIGINAL_TOPIC].as_str().unwrap_or("-");
+        let moved_at = json[FIELD_METADATA][METADATA_MOVED_TO_DLQ_AT].as_str().unwrap_or("-");
 
-        let metadata = serde_json::to_string_pretty(&json["metadata"])
+        let metadata = serde_json::to_string_pretty(&json[FIELD_METADATA])
             .unwrap_or_else(|_| "-".to_string());
-        let payload = serde_json::to_string_pretty(&json["payload"])
+        let payload = serde_json::to_string_pretty(&json[FIELD_PAYLOAD])
             .unwrap_or_else(|_| "-".to_string());
         
         Self {

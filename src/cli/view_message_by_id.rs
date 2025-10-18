@@ -1,9 +1,10 @@
+use anyhow::{anyhow, Context};
 use log::{info, warn};
 use rdkafka::{config::RDKafkaLogLevel, consumer::Consumer, ClientConfig, Message};
 use serde_json::from_str;
 use tabled::{settings::Rotate, Table};
 
-use crate::{cli::DlqMessage, kafka::{CustomContext, LoggingConsumer}};
+use crate::{cli::DlqMessage, kafka::{CustomContext, LoggingConsumer, AUTO_OFFSET_RESET, BOOTSTRAP_SERVERS, ENABLE_AUTO_COMMIT, ENABLE_PARTITION_EOF, GROUP_ID, SESSION_TIMEOUT_MS, TIMEOUT_MS}};
 
 pub async fn view_message_by_id(
     brokers: &str,
@@ -15,22 +16,22 @@ pub async fn view_message_by_id(
     let mut config = ClientConfig::new();
 
     config
-        .set("group.id", group_id)
-        .set("bootstrap.servers", brokers)
-        .set("enable.partition.eof", "true")  // Enable EOF detection
-        .set("auto.offset.reset", "earliest") // Start from beginning
-        .set("enable.auto.commit", "false")   // Don't auto-commit
-        .set("session.timeout.ms", "6000")
+        .set(GROUP_ID, group_id)
+        .set(BOOTSTRAP_SERVERS, brokers)
+        .set(ENABLE_PARTITION_EOF, "true")  // Enable EOF detection
+        .set(AUTO_OFFSET_RESET, "earliest") // Start from beginning
+        .set(ENABLE_AUTO_COMMIT, "false")   // Don't auto-commit
+        .set(SESSION_TIMEOUT_MS, TIMEOUT_MS)
         .set_log_level(RDKafkaLogLevel::Debug);
 
     let consumer: LoggingConsumer = config
         .create_with_context(context)
-        .expect("Consumer creation failed");
+        .context("Consumer creation failed")?;
 
     let topics = &[topic];
     consumer
         .subscribe(topics)
-        .expect("Can't subscribe to specified topic");
+        .map_err(|e| anyhow!("Failed to subscribe to topic: {}", e))?;
 
     let mut table_data:Vec<DlqMessage> = vec!();
     loop {
@@ -38,7 +39,7 @@ pub async fn view_message_by_id(
             Err(e) => {
                 if let rdkafka::error::KafkaError::PartitionEOF(_) = e {
                     info!("Reached end of partition (EOF)");
-                    break;
+                    break
                 } else {
                     warn!("Kafka error: {}", e);
                     break; // Exit on other errors
@@ -46,7 +47,10 @@ pub async fn view_message_by_id(
             }
             Ok(m) => {
                 let payload = match m.payload_view::<str>() {
-                    None => "",
+                    None => {
+                        warn!("No payload found in message, skipping");
+                        continue;
+                    },
                     Some(Ok(s)) => s,
                     Some(Err(e)) => {
                         warn!("Error while deserializing message payload: {:?}", e);
@@ -54,7 +58,14 @@ pub async fn view_message_by_id(
                     }
                 };
                 
-                let json: serde_json::Value = from_str(payload).expect("Failed to parse");
+                let json: serde_json::Value = match from_str(payload) {
+                    Ok(j) => j,
+                    Err(e) => {
+                        warn!("Failed to parse message as JSON: {}, skipping", e);
+                        continue;
+                    }
+                };
+
                 let item = DlqMessage::parse(json);
                 if item.id.eq(id) || item.correlation_id.eq(id) {
                     table_data.push(item);
@@ -62,6 +73,10 @@ pub async fn view_message_by_id(
                 }
             }
         };
+    }
+
+    if table_data.is_empty() {
+        return Err(anyhow!("Message not found"));
     }
 
     let mut table = Table::new(table_data);
