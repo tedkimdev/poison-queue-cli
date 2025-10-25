@@ -38,11 +38,6 @@ async fn main() {
                 std::process::exit(1);
             }
         },
-        Some(Commands::EditMessage {
-            message_id,
-        }) => {
-            todo!("{}", message_id);
-        },
         Some(Commands::ArchiveMessage {
             topic,
             message_id,
@@ -53,9 +48,22 @@ async fn main() {
             }
         },
         Some(Commands::RepublishMessage {
+            topic,
             message_id,
+            payload_file,
+            dry_run,
         }) => {
-            todo!("{}", message_id);
+            if let Err(e) = republish_message(
+                brokers,
+                group_id,
+                &topic,
+                &message_id,
+                payload_file.as_deref(),
+                dry_run,
+            ).await {
+                eprintln!("Error republishing message: {}", e);
+                std::process::exit(1);
+            }
         },
         None => {
             println!("Run with --help to see instructions");

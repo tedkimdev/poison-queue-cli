@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use tabled::Tabled;
 
 // DLQ message field names
@@ -13,7 +14,7 @@ pub const METADATA_RETRY_COUNT: &str = "retryCount";
 pub const METADATA_ORIGINAL_TOPIC: &str = "originalTopic";
 pub const METADATA_MOVED_TO_DLQ_AT: &str = "movedToDlqAt";
 
-#[derive(Tabled)]
+#[derive(Tabled, Serialize, Deserialize)]
 pub struct DlqMessage {
     pub payload: String,
     pub metadata: String,

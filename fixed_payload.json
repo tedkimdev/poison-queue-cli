@@ -1,0 +1,8 @@
+{
+    "action": "test",
+    "data": {
+      "corrupted": true,
+      "email": "correct@email.com"
+    },
+    "userId": "user-123"
+  }
