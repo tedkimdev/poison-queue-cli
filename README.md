@@ -54,6 +54,34 @@ One way to handle messages individually is to maintain a database table that tra
 This approach allows **selective processing, auditing, and safe reprocessing**.  
 > Note: This is just a conceptual approach; it is not implemented in this project.
 
+## Usage Example
+```
+# 1. Check what's in the DLQ
+cargo run list-messages dlq-user-events
+
+# Output:
+# | id                | reason      | retries | original_topic |
+# | f6fcc3f0-f911-... | Max retries | 5       | user-events    |
+
+# 2. View the problematic message
+cargo run view-message dlq-user-events f6fcc3f0-f911-4083-a30a-bf72780096be
+
+# 3. Create fixed-payload.json with corrected data
+echo '{"userId": "12345", "email": "valid@example.com"}' > fixed-payload.json
+
+# 4. Fix and republish (shows diff, asks confirmation)
+cargo run edit-message dlq-user-events f6fcc3f0-f911-4083-a30a-bf72780096be \
+    --payload-file fixed-payload.json
+
+# Shows diff, confirms, then:
+# - Publishes to user-events (original topic)
+# - Removes from dlq-user-events (commits offset)
+
+# 5. Verify it's gone from DLQ
+cargo run list-messages dlq-user-events
+# (Should be empty or not show that message)
+```
+
 ## Running Locally
 
 ### 1. Start Kafka Infrastructure

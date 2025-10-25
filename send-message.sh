@@ -22,7 +22,7 @@ case $TYPE in
         MSG='{"id":"'$ID'","correlationId":"'$CORR_ID'","metadata":{"source":"test","retryCount":3,"failureReason":"Invalid format"},"payload":{"userId":"user-123","action":"test","data":{"email":"invalid","age":"not-number"}}}'
         ;;
     "dlq")
-        MSG='{"id":"'$ID'","correlationId":"'$CORR_ID'","metadata":{"source":"test","retryCount":5,"failureReason":"Max retries","dlqTopic":"dlq-test","originalTopic":"test-topic","movedToDlqAt":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"},"payload":{"userId":"user-123","action":"test","data":{"email":"malformed","corrupted":true}}}'
+        MSG='{"id":"'$ID'","correlationId":"'$CORR_ID'","metadata":{"source":"test","retryCount":5,"failureReason":"Max retries","originalTopic":"user-events","movedToDlqAt":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"},"payload":{"userId":"user-123","action":"test","data":{"email":"malformed","corrupted":true}}}'
         ;;
     *)
         MSG='{"id":"'$ID'","correlationId":"'$CORR_ID'","metadata":{"source":"test","retryCount":0},"payload":{"userId":"user-123","action":"test","data":{"email":"user@example.com","age":25}}}'
