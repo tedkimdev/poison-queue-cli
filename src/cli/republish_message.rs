@@ -78,7 +78,7 @@ pub async fn republish_message(
                     Some(Ok(s)) => s,
                     Some(Err(e)) => {
                         warn!("Error while deserializing message payload: {:?}", e);
-                        ""
+                        continue;
                     }
                 };
 
@@ -189,8 +189,8 @@ fn read_payload_from_file(path: &Path) -> Result<serde_json::Value, anyhow::Erro
 /// Display diff when payload is being changed
 fn display_diff_and_plan(
     dlq_message: &DlqMessage,
-    old_payload: &String,
-    new_payload: &String,
+    old_payload: &str,
+    new_payload: &str,
     dlq_topic: &str,
     payload_file: &Path,
     dry_run: bool,
