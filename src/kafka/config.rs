@@ -9,3 +9,8 @@ pub const MESSAGE_TIMEOUT_MS: &str = "message.timeout.ms";
 
 // Timeout value (in milliseconds)
 pub const TIMEOUT_MS: &str = "6000";  // 6 seconds
+
+// Kafka message headers
+pub const MESSAGE_HEADER_MESSAGE_ID: &str = "id";
+pub const MESSAGE_HEADER_CORRELATION_ID: &str = "correlation_id";
+pub const MESSAGE_HEADER_REPUBLISHED_AT: &str = "republished_at";
